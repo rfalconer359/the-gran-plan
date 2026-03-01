@@ -57,9 +57,9 @@ export function AddChildPage() {
         dateOfBirth: dob,
         allergies,
         emergencyContacts: validContacts,
-        doctorName: doctorName || undefined,
-        doctorPhone: doctorPhone || undefined,
-        notes: notes || undefined,
+        ...(doctorName ? { doctorName } : {}),
+        ...(doctorPhone ? { doctorPhone } : {}),
+        ...(notes ? { notes } : {}),
       });
 
       navigate('/children');
