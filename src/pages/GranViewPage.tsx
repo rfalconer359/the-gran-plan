@@ -5,11 +5,13 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Spinner } from '../components/ui/Spinner';
 import { Alert } from '../components/ui/Alert';
+import { DatePicker } from '../components/ui/DatePicker';
+import { DayNotesSection } from '../components/gran/DayNotesSection';
 import { getChildren } from '../services/children';
 import { getSchedulesForDay, getDayLog, toggleEntryCompletion } from '../services/schedules';
 import { addNote } from '../services/notes';
-import type { Child, Schedule, ScheduleEntry } from '../types';
-import { formatTime, getTodayString, getMatchingDayTypes, getCurrentTimeSlot } from '../utils/date';
+import type { Child, Schedule, ScheduleEntry, DayNote } from '../types';
+import { formatTime, getTodayString, getDayTypesForDate, getCurrentTimeSlot, isToday } from '../utils/date';
 import { categoryConfig } from '../utils/categories';
 import { cn } from '../utils/cn';
 
@@ -32,13 +34,15 @@ export function GranViewPage() {
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [completedEntries, setCompletedEntries] = useState<string[]>([]);
+  const [dayNotes, setDayNotes] = useState<DayNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [quickNote, setQuickNote] = useState('');
   const [noteSent, setNoteSent] = useState(false);
   const [showEmergency, setShowEmergency] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(getTodayString());
 
-  const today = getTodayString();
-  const dayTypes = getMatchingDayTypes();
+  const dayTypes = getDayTypesForDate(selectedDate);
+  const viewingToday = isToday(selectedDate);
 
   useEffect(() => {
     if (!family) {
@@ -58,15 +62,17 @@ export function GranViewPage() {
       const schedules = await getSchedulesForDay(family!.id, selectedChild!.id, dayTypes);
       if (schedules.length > 0) {
         setSchedule(schedules[0]);
-        const log = await getDayLog(family!.id, selectedChild!.id, today);
+        const log = await getDayLog(family!.id, selectedChild!.id, selectedDate);
         setCompletedEntries(log?.completedEntries || []);
+        setDayNotes(log?.dayNotes || []);
       } else {
         setSchedule(null);
         setCompletedEntries([]);
+        setDayNotes([]);
       }
     }
     loadSchedule();
-  }, [family, selectedChild]);
+  }, [family, selectedChild, selectedDate]);
 
   const handleToggle = useCallback(
     async (entryId: string) => {
@@ -74,13 +80,13 @@ export function GranViewPage() {
       const newCompleted = await toggleEntryCompletion(
         family.id,
         selectedChild.id,
-        today,
+        selectedDate,
         schedule.id,
         entryId,
       );
       setCompletedEntries(newCompleted);
     },
-    [family, selectedChild, schedule, today],
+    [family, selectedChild, schedule, selectedDate],
   );
 
   async function handleSendNote() {
@@ -109,7 +115,7 @@ export function GranViewPage() {
     );
   }
 
-  const currentEntry = schedule ? findCurrentEntry(schedule.entries) : null;
+  const currentEntry = schedule && viewingToday ? findCurrentEntry(schedule.entries) : null;
   const sortedEntries = schedule
     ? [...schedule.entries].sort((a, b) => a.order - b.order)
     : [];
@@ -120,16 +126,9 @@ export function GranViewPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-warm-700">Today's Plan</h1>
-          <p className="text-lg text-warm-500">
-            {new Date().toLocaleDateString('en-GB', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-            })}
-          </p>
-        </div>
+        <h1 className="text-3xl font-bold text-warm-700">
+          {viewingToday ? "Today's Plan" : 'Daily Plan'}
+        </h1>
         <button
           onClick={() => setShowEmergency(!showEmergency)}
           className="px-4 py-3 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-colors"
@@ -137,6 +136,9 @@ export function GranViewPage() {
           🆘 Emergency
         </button>
       </div>
+
+      {/* Date Navigation */}
+      <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
 
       {/* Emergency Info Panel */}
       {showEmergency && selectedChild && (
@@ -208,8 +210,8 @@ export function GranViewPage() {
         </div>
       )}
 
-      {/* "Right Now" banner */}
-      {currentEntry && !completedEntries.includes(currentEntry.id) && (
+      {/* "Right Now" banner — only when viewing today */}
+      {viewingToday && currentEntry && !completedEntries.includes(currentEntry.id) && (
         <Card className="bg-teal-50 border-2 border-teal-300">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-sm font-bold uppercase tracking-wider text-teal-600">
@@ -249,14 +251,14 @@ export function GranViewPage() {
       {!schedule ? (
         <Card className="text-center py-8">
           <span className="text-5xl block mb-4">📋</span>
-          <p className="text-xl text-warm-500">No schedule for today.</p>
+          <p className="text-xl text-warm-500">No schedule for this day.</p>
           <p className="text-warm-400 mt-2">Ask the parents to create one.</p>
         </Card>
       ) : (
         <div className="space-y-3">
           {sortedEntries.map((entry) => {
             const isDone = completedEntries.includes(entry.id);
-            const isCurrent = currentEntry?.id === entry.id && !isDone;
+            const isCurrent = viewingToday && currentEntry?.id === entry.id && !isDone;
             const cat = categoryConfig[entry.category];
 
             return (
@@ -311,6 +313,19 @@ export function GranViewPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Day Notes */}
+      {family && selectedChild && (
+        <DayNotesSection
+          familyId={family.id}
+          childId={selectedChild.id}
+          date={selectedDate}
+          scheduleId={schedule?.id || ''}
+          dayNotes={dayNotes}
+          onNoteAdded={(note) => setDayNotes((prev) => [...prev, note])}
+          onNoteDeleted={(noteId) => setDayNotes((prev) => prev.filter((n) => n.id !== noteId))}
+        />
       )}
 
       {/* Quick Note */}

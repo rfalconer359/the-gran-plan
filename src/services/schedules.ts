@@ -107,6 +107,7 @@ export async function updateDayLog(
       ...data,
       completedEntries: data.completedEntries || [],
       notes: data.notes || [],
+      dayNotes: data.dayNotes || [],
       updatedAt: serverTimestamp(),
     });
   }

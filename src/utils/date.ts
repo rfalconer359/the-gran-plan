@@ -49,3 +49,37 @@ export function getCurrentTimeSlot(): string {
   const now = new Date();
   return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 }
+
+export function formatDateString(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+export function offsetDateString(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function getDayTypesForDate(dateStr: string): DayType[] {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const dayIndex = date.getDay();
+  const days: DayType[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const specific = days[dayIndex];
+  const general: DayType = dayIndex >= 1 && dayIndex <= 5 ? 'weekday' : 'weekend';
+  return [specific, general];
+}
+
+export function isToday(dateStr: string): boolean {
+  return dateStr === getTodayString();
+}
