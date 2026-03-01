@@ -15,6 +15,7 @@ import { ChildDetailPage } from './pages/ChildDetailPage';
 import { EditChildPage } from './pages/EditChildPage';
 import { SchedulesPage } from './pages/SchedulesPage';
 import { ScheduleEditorPage } from './pages/ScheduleEditorPage';
+import { ScheduleViewPage } from './pages/ScheduleViewPage';
 import { GranViewPage } from './pages/GranViewPage';
 import { NotesPage } from './pages/NotesPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -66,6 +67,7 @@ export default function App() {
               <Route path="/children/:childId" element={<ChildDetailPage />} />
               <Route path="/children/:childId/edit" element={<EditChildPage />} />
               <Route path="/children/:childId/schedules/new" element={<ScheduleEditorPage />} />
+              <Route path="/children/:childId/schedules/:scheduleId/view" element={<ScheduleViewPage />} />
               <Route path="/children/:childId/schedules/:scheduleId" element={<ScheduleEditorPage />} />
               <Route path="/schedules" element={<SchedulesPage />} />
               <Route path="/granview" element={<GranViewPage />} />

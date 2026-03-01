@@ -167,7 +167,7 @@ export function ChildDetailPage() {
             {schedules.map((schedule) => (
               <Link
                 key={schedule.id}
-                to={`/children/${child.id}/schedules/${schedule.id}`}
+                to={`/children/${child.id}/schedules/${schedule.id}/view`}
               >
                 <div className="p-4 bg-cream-50 rounded-xl hover:bg-cream-100 transition-colors mb-3">
                   <div className="flex items-center justify-between">

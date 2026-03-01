@@ -17,6 +17,7 @@ import { getChild } from '../services/children';
 import type { ScheduleEntry, ScheduleCategory, DayType, Child } from '../types';
 import { categoryConfig } from '../utils/categories';
 import { cn } from '../utils/cn';
+import { scheduleTemplates, type ScheduleTemplate } from '../data/scheduleTemplates';
 
 const dayTypeOptions: { value: DayType; label: string }[] = [
   { value: 'weekday', label: 'Weekdays' },
@@ -52,6 +53,7 @@ export function ScheduleEditorPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(!!isEditing);
   const [saving, setSaving] = useState(false);
+  const [templatePicked, setTemplatePicked] = useState(!!isEditing);
 
   useEffect(() => {
     if (!family || !childId) return;
@@ -159,10 +161,69 @@ export function ScheduleEditorPage() {
     navigate(`/children/${childId}`);
   }
 
+  function applyTemplate(template: ScheduleTemplate) {
+    setEntries(
+      template.entries.map((e) => ({
+        ...e,
+        id: generateId(),
+      })),
+    );
+    setScheduleName(template.name);
+    setTemplatePicked(true);
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!templatePicked) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-warm-700">
+          Create Schedule
+          {child && <span className="text-warm-400"> — {child.name}</span>}
+        </h1>
+        <p className="text-lg text-warm-500">
+          Start from a template or build your schedule from scratch.
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          {scheduleTemplates.map((template) => (
+            <button
+              key={template.id}
+              type="button"
+              onClick={() => applyTemplate(template)}
+              className="text-left p-5 bg-white rounded-2xl border-2 border-warm-200 hover:border-warm-400 hover:shadow-md transition-all"
+            >
+              <h3 className="text-xl font-bold text-warm-700">{template.name}</h3>
+              <p className="text-warm-400 text-sm font-medium mt-1">{template.ageGroup}</p>
+              <p className="text-warm-500 mt-2">{template.description}</p>
+              <p className="text-teal-600 font-medium mt-3">
+                {template.entries.length} activities
+              </p>
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setTemplatePicked(true)}
+            className="text-left p-5 bg-white rounded-2xl border-2 border-dashed border-warm-200 hover:border-warm-400 hover:shadow-md transition-all"
+          >
+            <h3 className="text-xl font-bold text-warm-700">Start from Scratch</h3>
+            <p className="text-warm-500 mt-2">
+              Build your own schedule with a blank canvas.
+            </p>
+            <p className="text-warm-400 font-medium mt-3">Empty schedule</p>
+          </button>
+        </div>
+
+        <Button variant="ghost" onClick={() => navigate(`/children/${childId}`)}>
+          Cancel
+        </Button>
       </div>
     );
   }
