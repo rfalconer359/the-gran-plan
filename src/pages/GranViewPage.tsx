@@ -41,7 +41,10 @@ export function GranViewPage() {
   const dayTypes = getMatchingDayTypes();
 
   useEffect(() => {
-    if (!family) return;
+    if (!family) {
+      setLoading(false);
+      return;
+    }
     getChildren(family.id).then((kids) => {
       setChildren(kids);
       if (kids.length > 0) setSelectedChild(kids[0]);

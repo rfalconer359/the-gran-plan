@@ -15,7 +15,10 @@ export function SchedulesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!family) return;
+    if (!family) {
+      setLoading(false);
+      return;
+    }
     async function load() {
       const children = await getChildren(family!.id);
       const results = await Promise.all(

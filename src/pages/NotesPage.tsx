@@ -16,7 +16,10 @@ export function NotesPage() {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    if (!family) return;
+    if (!family) {
+      setLoading(false);
+      return;
+    }
     getNotes(family.id).then(setNotes).finally(() => setLoading(false));
   }, [family]);
 

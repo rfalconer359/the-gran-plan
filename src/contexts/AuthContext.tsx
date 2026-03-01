@@ -35,7 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const p = await getUserProfile(firebaseUser.uid);
+        let p = await getUserProfile(firebaseUser.uid);
+        // Retry once — during signup the Firestore doc may not exist yet
+        // because onAuthStateChanged fires before setDoc completes
+        if (!p) {
+          await new Promise((r) => setTimeout(r, 1500));
+          p = await getUserProfile(firebaseUser.uid);
+        }
         setProfile(p);
       } else {
         setProfile(null);

@@ -17,7 +17,10 @@ export function ChildrenPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!family) return;
+    if (!family) {
+      setLoading(false);
+      return;
+    }
     getChildren(family.id).then(setChildren).finally(() => setLoading(false));
   }, [family]);
 
