@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if user is authenticated
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Helper: check if user is a member of the family
+    function isFamilyMember(familyId) {
+      return isAuth() &&
+        request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.memberIds;
+    }
+
+    // Helper: check if user is a parent in the family
+    function isParentInFamily(familyId) {
+      return isFamilyMember(familyId) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'parent';
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.auth.uid == userId;
+      allow update: if isAuth() && request.auth.uid == userId;
+    }
+
+    // Families
+    match /families/{familyId} {
+      allow read: if isFamilyMember(familyId);
+      allow create: if isAuth();
+      allow update: if isFamilyMember(familyId);
+
+      // Children
+      match /children/{childId} {
+        allow read: if isFamilyMember(familyId);
+        allow create, update, delete: if isParentInFamily(familyId);
+
+        // Schedules
+        match /schedules/{scheduleId} {
+          allow read: if isFamilyMember(familyId);
+          allow create, update, delete: if isParentInFamily(familyId);
+        }
+
+        // Day logs (grandparents can update)
+        match /dayLogs/{date} {
+          allow read: if isFamilyMember(familyId);
+          allow create, update: if isFamilyMember(familyId);
+        }
+      }
+
+      // Notes (any family member can read/create)
+      match /notes/{noteId} {
+        allow read: if isFamilyMember(familyId);
+        allow create: if isFamilyMember(familyId);
+        allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    // Invite codes (anyone authenticated can read to join)
+    match /invites/{code} {
+      allow read: if isAuth();
+      allow create: if isAuth();
+      allow delete: if isAuth();
+    }
+  }
+}
