@@ -48,12 +48,13 @@ export interface EmergencyContact {
 
 export type ScheduleCategory =
   | 'meal'
+  | 'milk'
   | 'nap'
+  | 'sleep'
+  | 'walk'
   | 'play'
-  | 'outdoor'
-  | 'learning'
   | 'bath'
-  | 'medicine'
+  | 'tummytime'
   | 'other';
 
 export type DayType = 'weekday' | 'weekend' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';

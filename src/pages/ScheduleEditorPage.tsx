@@ -31,7 +31,7 @@ const dayTypeOptions: { value: DayType; label: string }[] = [
 ];
 
 const categories: ScheduleCategory[] = [
-  'meal', 'nap', 'play', 'outdoor', 'learning', 'bath', 'medicine', 'other',
+  'meal', 'milk', 'nap', 'sleep', 'walk', 'play', 'bath', 'tummytime', 'other',
 ];
 
 function generateId() {
@@ -64,25 +64,34 @@ export function ScheduleEditorPage() {
         if (schedule) {
           setScheduleName(schedule.name);
           setDayType(schedule.dayType);
-          setEntries(schedule.entries);
+          setEntries([...schedule.entries].sort((a, b) => a.order - b.order));
         }
         setLoading(false);
       });
     }
   }, [family, childId, scheduleId, isEditing]);
 
-  function addEntry() {
-    setEntries((prev) => [
-      ...prev,
-      {
-        id: generateId(),
-        time: '08:00',
-        activity: '',
-        details: '',
-        category: 'other',
-        order: prev.length,
-      },
-    ]);
+  function addEntryAt(position: 'top' | 'bottom' | number) {
+    const newEntry: ScheduleEntry = {
+      id: generateId(),
+      time: '08:00',
+      activity: '',
+      details: '',
+      category: 'other',
+      order: 0,
+    };
+
+    setEntries((prev) => {
+      let updated: ScheduleEntry[];
+      if (position === 'top') {
+        updated = [newEntry, ...prev];
+      } else if (position === 'bottom') {
+        updated = [...prev, newEntry];
+      } else {
+        updated = [...prev.slice(0, position + 1), newEntry, ...prev.slice(position + 1)];
+      }
+      return updated.map((e, i) => ({ ...e, order: i }));
+    });
   }
 
   function updateEntry(id: string, field: keyof ScheduleEntry, value: string | number) {
@@ -92,44 +101,46 @@ export function ScheduleEditorPage() {
   }
 
   function removeEntry(id: string) {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    setEntries((prev) =>
+      prev.filter((e) => e.id !== id).map((e, i) => ({ ...e, order: i })),
+    );
   }
 
   function moveEntry(index: number, direction: 'up' | 'down') {
-    const newEntries = [...entries];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newEntries.length) return;
-    [newEntries[index], newEntries[targetIndex]] = [newEntries[targetIndex], newEntries[index]];
-    setEntries(newEntries.map((e, i) => ({ ...e, order: i })));
+    setEntries((prev) => {
+      const arr = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= arr.length) return prev;
+      [arr[index], arr[targetIndex]] = [arr[targetIndex], arr[index]];
+      return arr.map((e, i) => ({ ...e, order: i }));
+    });
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!family || !childId || !user) return;
     if (entries.length === 0) {
-      setError('Add at least one schedule entry.');
+      setError('Add at least one activity.');
       return;
     }
     setError('');
     setSaving(true);
 
     try {
-      const sortedEntries = entries
-        .sort((a, b) => a.time.localeCompare(b.time))
-        .map((e, i) => ({ ...e, order: i }));
+      const orderedEntries = entries.map((e, i) => ({ ...e, order: i }));
 
       if (isEditing) {
         await updateSchedule(family.id, childId, scheduleId!, {
           name: scheduleName,
           dayType,
-          entries: sortedEntries,
+          entries: orderedEntries,
         });
       } else {
         await createSchedule(family.id, childId, {
           childId,
           name: scheduleName,
           dayType,
-          entries: sortedEntries,
+          entries: orderedEntries,
           createdBy: user.uid,
         });
       }
@@ -194,10 +205,10 @@ export function ScheduleEditorPage() {
         </Card>
 
         {/* Schedule Entries */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-warm-700">Activities</h2>
-            <Button type="button" variant="outline" onClick={addEntry}>
+            <Button type="button" variant="outline" onClick={() => addEntryAt('bottom')}>
               + Add Activity
             </Button>
           </div>
@@ -207,24 +218,26 @@ export function ScheduleEditorPage() {
               <p className="text-warm-500 text-lg mb-4">
                 No activities yet. Add your first one!
               </p>
-              <Button type="button" onClick={addEntry}>
+              <Button type="button" onClick={() => addEntryAt('bottom')}>
                 + Add Activity
               </Button>
             </Card>
           )}
 
-          {entries
-            .sort((a, b) => a.time.localeCompare(b.time))
-            .map((entry, index) => {
-              const cat = categoryConfig[entry.category];
-              return (
+          {entries.map((entry, index) => {
+            const cat = categoryConfig[entry.category];
+            return (
+              <div key={entry.id}>
                 <Card
-                  key={entry.id}
                   className={cn('border-l-4', cat.borderColor)}
                   padding="sm"
                 >
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3">
+                    {/* Row 1: Position, time, activity name */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-warm-400 font-bold text-lg w-8 text-center flex-shrink-0">
+                        {index + 1}
+                      </span>
                       <input
                         type="time"
                         value={entry.time}
@@ -241,6 +254,7 @@ export function ScheduleEditorPage() {
                       />
                     </div>
 
+                    {/* Row 2: Details */}
                     <input
                       type="text"
                       value={entry.details || ''}
@@ -249,54 +263,64 @@ export function ScheduleEditorPage() {
                       className="w-full px-3 py-2 text-base rounded-xl border-2 border-warm-200 bg-white focus:outline-none focus:border-warm-500"
                     />
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-wrap gap-2">
-                        {categories.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => updateEntry(entry.id, 'category', c)}
-                            className={cn(
-                              'px-3 py-1 rounded-lg text-sm font-medium transition-colors',
-                              entry.category === c
-                                ? `${categoryConfig[c].bgColor} ${categoryConfig[c].textColor}`
-                                : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
-                            )}
-                          >
-                            {categoryConfig[c].emoji} {categoryConfig[c].label}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
+                    {/* Row 3: Category chips */}
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((c) => (
                         <button
+                          key={c}
                           type="button"
-                          onClick={() => moveEntry(index, 'up')}
-                          disabled={index === 0}
-                          className="p-1 text-warm-400 hover:text-warm-600 disabled:opacity-30"
+                          onClick={() => updateEntry(entry.id, 'category', c)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                            entry.category === c
+                              ? `${categoryConfig[c].bgColor} ${categoryConfig[c].textColor} ring-2 ring-offset-1 ring-current`
+                              : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
+                          )}
                         >
-                          ▲
+                          {categoryConfig[c].emoji} {categoryConfig[c].label}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => moveEntry(index, 'down')}
-                          disabled={index === entries.length - 1}
-                          className="p-1 text-warm-400 hover:text-warm-600 disabled:opacity-30"
-                        >
-                          ▼
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeEntry(entry.id)}
-                          className="p-1 text-red-400 hover:text-red-600 ml-2"
-                        >
-                          ✕
-                        </button>
-                      </div>
+                      ))}
+                    </div>
+
+                    {/* Row 4: Move + delete controls — big tap targets */}
+                    <div className="flex items-center gap-2 pt-1 border-t border-warm-100">
+                      <button
+                        type="button"
+                        onClick={() => moveEntry(index, 'up')}
+                        disabled={index === 0}
+                        className="flex items-center gap-1 px-4 py-2 rounded-xl text-base font-medium bg-warm-50 text-warm-600 hover:bg-warm-100 disabled:opacity-30 disabled:hover:bg-warm-50 transition-colors"
+                      >
+                        ▲ Move Up
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveEntry(index, 'down')}
+                        disabled={index === entries.length - 1}
+                        className="flex items-center gap-1 px-4 py-2 rounded-xl text-base font-medium bg-warm-50 text-warm-600 hover:bg-warm-100 disabled:opacity-30 disabled:hover:bg-warm-50 transition-colors"
+                      >
+                        ▼ Move Down
+                      </button>
+                      <div className="flex-1" />
+                      <button
+                        type="button"
+                        onClick={() => addEntryAt(index)}
+                        className="px-4 py-2 rounded-xl text-base font-medium bg-teal-50 text-teal-600 hover:bg-teal-100 transition-colors"
+                      >
+                        + Insert Below
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeEntry(entry.id)}
+                        className="px-4 py-2 rounded-xl text-base font-medium bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                      >
+                        Remove
+                      </button>
                     </div>
                   </div>
                 </Card>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex gap-3 pt-4">

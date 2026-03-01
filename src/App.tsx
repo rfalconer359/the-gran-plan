@@ -12,6 +12,7 @@ import { JoinFamilyPage } from './pages/JoinFamilyPage';
 import { ChildrenPage } from './pages/ChildrenPage';
 import { AddChildPage } from './pages/AddChildPage';
 import { ChildDetailPage } from './pages/ChildDetailPage';
+import { EditChildPage } from './pages/EditChildPage';
 import { SchedulesPage } from './pages/SchedulesPage';
 import { ScheduleEditorPage } from './pages/ScheduleEditorPage';
 import { GranViewPage } from './pages/GranViewPage';
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="/children" element={<ChildrenPage />} />
               <Route path="/children/new" element={<AddChildPage />} />
               <Route path="/children/:childId" element={<ChildDetailPage />} />
+              <Route path="/children/:childId/edit" element={<EditChildPage />} />
               <Route path="/children/:childId/schedules/new" element={<ScheduleEditorPage />} />
               <Route path="/children/:childId/schedules/:scheduleId" element={<ScheduleEditorPage />} />
               <Route path="/schedules" element={<SchedulesPage />} />

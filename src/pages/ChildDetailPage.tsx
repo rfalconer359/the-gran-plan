@@ -66,10 +66,15 @@ export function ChildDetailPage() {
             '👶'
           )}
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold text-warm-700">{child.name}</h1>
           <p className="text-lg text-warm-500">{calculateAge(child.dateOfBirth)}</p>
         </div>
+        {profile?.role === 'parent' && (
+          <Link to={`/children/${child.id}/edit`}>
+            <Button variant="outline">Edit</Button>
+          </Link>
+        )}
       </div>
 
       {/* Allergies */}

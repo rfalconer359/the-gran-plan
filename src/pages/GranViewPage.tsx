@@ -111,7 +111,7 @@ export function GranViewPage() {
 
   const currentEntry = schedule ? findCurrentEntry(schedule.entries) : null;
   const sortedEntries = schedule
-    ? [...schedule.entries].sort((a, b) => a.time.localeCompare(b.time))
+    ? [...schedule.entries].sort((a, b) => a.order - b.order)
     : [];
   const doneCount = completedEntries.length;
   const totalCount = sortedEntries.length;
