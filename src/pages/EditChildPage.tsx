@@ -8,7 +8,8 @@ import { Alert } from '../components/ui/Alert';
 import { Spinner } from '../components/ui/Spinner';
 import { useFamily } from '../contexts/FamilyContext';
 import { getChild, updateChild } from '../services/children';
-import type { EmergencyContact } from '../types';
+import { getSchedules } from '../services/schedules';
+import type { EmergencyContact, Schedule } from '../types';
 
 export function EditChildPage() {
   const { childId } = useParams<{ childId: string }>();
@@ -23,13 +24,18 @@ export function EditChildPage() {
   const [contacts, setContacts] = useState<EmergencyContact[]>([
     { name: '', relationship: '', phone: '' },
   ]);
+  const [defaultScheduleId, setDefaultScheduleId] = useState('');
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!family || !childId) return;
-    getChild(family.id, childId).then((child) => {
+    Promise.all([
+      getChild(family.id, childId),
+      getSchedules(family.id, childId),
+    ]).then(([child, scheds]) => {
       if (child) {
         setName(child.name);
         setDob(child.dateOfBirth);
@@ -37,12 +43,14 @@ export function EditChildPage() {
         setDoctorName(child.doctorName || '');
         setDoctorPhone(child.doctorPhone || '');
         setNotes(child.notes || '');
+        setDefaultScheduleId(child.defaultScheduleId || '');
         setContacts(
           child.emergencyContacts.length > 0
             ? child.emergencyContacts
             : [{ name: '', relationship: '', phone: '' }],
         );
       }
+      setSchedules(scheds);
       setLoading(false);
     });
   }, [family, childId]);
@@ -83,6 +91,7 @@ export function EditChildPage() {
         doctorName: doctorName || '',
         doctorPhone: doctorPhone || '',
         notes: notes || '',
+        defaultScheduleId: defaultScheduleId || undefined,
       });
 
       navigate(`/children/${childId}`);
@@ -198,6 +207,49 @@ export function EditChildPage() {
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Anything else the grandparents should know..."
           />
+
+          {schedules.length > 0 && (
+            <div className="border-t border-warm-100 pt-6">
+              <h2 className="text-xl font-bold text-warm-700 mb-2">
+                Default Schedule
+              </h2>
+              <p className="text-warm-500 mb-4">
+                Automatically used when no schedule is assigned to a specific day.
+              </p>
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-4 rounded-xl border-2 border-warm-100 hover:border-warm-200 cursor-pointer transition-colors">
+                  <input
+                    type="radio"
+                    name="defaultSchedule"
+                    checked={defaultScheduleId === ''}
+                    onChange={() => setDefaultScheduleId('')}
+                    className="w-5 h-5 text-teal-500 focus:ring-teal-500"
+                  />
+                  <span className="text-lg text-warm-600">None (use day-type matching)</span>
+                </label>
+                {schedules.map((s) => (
+                  <label
+                    key={s.id}
+                    className="flex items-center gap-3 p-4 rounded-xl border-2 border-warm-100 hover:border-warm-200 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="radio"
+                      name="defaultSchedule"
+                      checked={defaultScheduleId === s.id}
+                      onChange={() => setDefaultScheduleId(s.id)}
+                      className="w-5 h-5 text-teal-500 focus:ring-teal-500"
+                    />
+                    <div>
+                      <span className="text-lg font-semibold text-warm-800">{s.name}</span>
+                      <span className="ml-2 px-2 py-0.5 bg-warm-100 text-warm-500 rounded text-sm">
+                        {s.dayType}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button type="submit" size="lg" loading={saving}>

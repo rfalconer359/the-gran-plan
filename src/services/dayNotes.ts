@@ -26,6 +26,7 @@ export async function addDayNote(
   authorId: string,
   authorName: string,
   files: File[],
+  entryId?: string,
 ): Promise<DayNote> {
   const noteId = crypto.randomUUID();
 
@@ -43,6 +44,7 @@ export async function addDayNote(
     photoUrls,
     authorId,
     authorName,
+    ...(entryId ? { entryId } : {}),
     createdAt: new Date().toISOString(),
   };
 

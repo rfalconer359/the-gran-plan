@@ -37,6 +37,7 @@ export interface Child {
   doctorName?: string;
   doctorPhone?: string;
   notes?: string;
+  defaultScheduleId?: string;
   createdAt: Timestamp;
 }
 
@@ -85,13 +86,14 @@ export interface DayNote {
   photoUrls: string[];
   authorId: string;
   authorName: string;
+  entryId?: string;
   createdAt: string; // ISO 8601 (lives inside a doc array, can't use serverTimestamp)
 }
 
 export interface DayLog {
   id: string; // date string YYYY-MM-DD
   childId: string;
-  scheduleId: string;
+  scheduleId?: string;
   completedEntries: string[]; // entry IDs
   notes: string[];
   dayNotes: DayNote[];

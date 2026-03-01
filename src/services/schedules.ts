@@ -77,6 +77,38 @@ export async function getSchedulesForDay(
   return snap.docs.map((d) => d.data() as Schedule);
 }
 
+export async function getScheduleById(
+  familyId: string,
+  childId: string,
+  scheduleId: string,
+): Promise<Schedule | null> {
+  const snap = await getDoc(
+    doc(db, 'families', familyId, 'children', childId, 'schedules', scheduleId),
+  );
+  return snap.exists() ? (snap.data() as Schedule) : null;
+}
+
+export async function assignScheduleToDay(
+  familyId: string,
+  childId: string,
+  date: string,
+  scheduleId: string,
+): Promise<void> {
+  await updateDayLog(familyId, childId, date, { scheduleId });
+}
+
+export async function clearDayScheduleAssignment(
+  familyId: string,
+  childId: string,
+  date: string,
+): Promise<void> {
+  const logRef = doc(db, 'families', familyId, 'children', childId, 'dayLogs', date);
+  const snap = await getDoc(logRef);
+  if (snap.exists()) {
+    await updateDoc(logRef, { scheduleId: '', updatedAt: serverTimestamp() });
+  }
+}
+
 // Day Logs
 export async function getDayLog(
   familyId: string,
