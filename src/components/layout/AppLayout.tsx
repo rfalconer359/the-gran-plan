@@ -5,20 +5,14 @@ import { cn } from '../../utils/cn';
 const navItems = [
   { to: '/', label: 'Home', icon: '🏠' },
   { to: '/children', label: 'Children', icon: '👶' },
-  { to: '/schedules', label: 'Schedules', icon: '📋' },
+  { to: '/daily', label: 'Daily', icon: '📅' },
   { to: '/notes', label: 'Notes', icon: '💬' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export function AppLayout() {
   const { profile } = useAuth();
-  // For grandparent role, show GranView instead of Schedules
-  const items = navItems.map((item) => {
-    if (item.to === '/schedules' && profile?.role === 'grandparent') {
-      return { to: '/granview', label: 'Today', icon: '✅' };
-    }
-    return item;
-  });
+  const items = navItems;
 
   return (
     <div className="min-h-screen bg-cream-50 flex flex-col lg:flex-row">

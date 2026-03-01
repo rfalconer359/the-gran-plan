@@ -159,11 +159,11 @@ export function HomePage() {
 
       {/* Quick actions */}
       <section className="grid gap-3 grid-cols-2">
-        {profile?.role === 'grandparent' && children.length > 0 && (
-          <Link to="/granview" className="col-span-2">
+        {children.length > 0 && (
+          <Link to="/daily" className="col-span-2">
             <Card className="bg-teal-50 border-teal-200 border-2 text-center py-6 hover:shadow-md transition-shadow">
-              <span className="text-4xl block mb-2">✅</span>
-              <p className="text-xl font-bold text-teal-700">Today's Schedule</p>
+              <span className="text-4xl block mb-2">📅</span>
+              <p className="text-xl font-bold text-teal-700">Daily View</p>
               <p className="text-teal-600">View & track today's activities</p>
             </Card>
           </Link>

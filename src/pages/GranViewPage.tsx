@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useFamily } from '../contexts/FamilyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Card } from '../components/ui/Card';
@@ -27,9 +28,10 @@ function findCurrentEntry(entries: ScheduleEntry[]): ScheduleEntry | null {
   return sorted.length > 0 ? sorted[0] : null;
 }
 
-export function GranViewPage() {
+export function DailyViewPage() {
   const { family } = useFamily();
   const { user, profile } = useAuth();
+  const isParent = profile?.role === 'parent';
   const [children, setChildren] = useState<Child[]>([]);
   const [selectedChild, setSelectedChild] = useState<Child | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
@@ -129,12 +131,24 @@ export function GranViewPage() {
         <h1 className="text-3xl font-bold text-warm-700">
           {viewingToday ? "Today's Plan" : 'Daily Plan'}
         </h1>
-        <button
-          onClick={() => setShowEmergency(!showEmergency)}
-          className="px-4 py-3 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-colors"
-        >
-          🆘 Emergency
-        </button>
+        <div className="flex gap-2">
+          {isParent && schedule && selectedChild && (
+            <Link
+              to={`/children/${selectedChild.id}/schedules/${schedule.id}`}
+              className="px-4 py-3 bg-warm-100 text-warm-700 rounded-xl font-bold text-lg hover:bg-warm-200 transition-colors"
+            >
+              Edit Schedule
+            </Link>
+          )}
+          {!isParent && (
+            <button
+              onClick={() => setShowEmergency(!showEmergency)}
+              className="px-4 py-3 bg-red-100 text-red-700 rounded-xl font-bold text-lg hover:bg-red-200 transition-colors"
+            >
+              🆘 Emergency
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Date Navigation */}
@@ -252,7 +266,16 @@ export function GranViewPage() {
         <Card className="text-center py-8">
           <span className="text-5xl block mb-4">📋</span>
           <p className="text-xl text-warm-500">No schedule for this day.</p>
-          <p className="text-warm-400 mt-2">Ask the parents to create one.</p>
+          {isParent && selectedChild ? (
+            <Link
+              to={`/children/${selectedChild.id}/schedules/new`}
+              className="inline-block mt-3 px-6 py-3 bg-warm-500 text-white rounded-xl font-semibold text-lg hover:bg-warm-600 transition-colors"
+            >
+              Create Schedule
+            </Link>
+          ) : (
+            <p className="text-warm-400 mt-2">Ask the parents to create one.</p>
+          )}
         </Card>
       ) : (
         <div className="space-y-3">
@@ -341,7 +364,7 @@ export function GranViewPage() {
             type="text"
             value={quickNote}
             onChange={(e) => setQuickNote(e.target.value)}
-            placeholder="Type a message to the parents..."
+            placeholder={isParent ? "Type a message to the family..." : "Type a message to the parents..."}
             className="flex-1 px-4 py-3 text-lg rounded-xl border-2 border-warm-200 bg-white focus:outline-none focus:border-warm-500"
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleSendNote();
