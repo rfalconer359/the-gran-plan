@@ -36,7 +36,9 @@ service cloud.firestore {
     match /families/{familyId} {
       allow read: if isFamilyMember(familyId) || isAdminUser();
       allow create: if isAuth();
-      allow update: if isFamilyMember(familyId);
+      // Allow members to update, and allow any authed user to join (add themselves to memberIds)
+      allow update: if isFamilyMember(familyId)
+        || (isAuth() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds']));
 
       // Children
       match /children/{childId} {
@@ -62,6 +64,12 @@ service cloud.firestore {
         allow create: if isFamilyMember(familyId);
         allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
       }
+    }
+
+    // Custom day names (admin-only write)
+    match /dayNames/{date} {
+      allow read: if isAuth();
+      allow write: if isAdminUser();
     }
 
     // Invite codes (anyone authenticated can read to join)

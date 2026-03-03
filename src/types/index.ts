@@ -100,6 +100,12 @@ export interface DayLog {
   updatedAt: Timestamp;
 }
 
+export interface DayName {
+  date: string;
+  name: string;
+  setBy: string;
+}
+
 export interface Note {
   id: string;
   familyId: string;

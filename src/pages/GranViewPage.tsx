@@ -18,6 +18,8 @@ import {
   toggleEntryCompletion,
 } from '../services/schedules';
 import { addNote } from '../services/notes';
+import { getDayName, setDayName, clearDayName } from '../services/dayNames';
+import { isAdmin } from '../config/admin';
 import type { Child, Schedule, ScheduleEntry, DayNote } from '../types';
 import { formatTime, getTodayString, getDayTypesForDate, getCurrentTimeSlot, isToday } from '../utils/date';
 import { categoryConfig } from '../utils/categories';
@@ -51,6 +53,7 @@ export function DailyViewPage() {
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [expandedNoteEntryId, setExpandedNoteEntryId] = useState<string | null>(null);
+  const [customDayName, setCustomDayName] = useState<string | null>(null);
 
   const dayTypes = getDayTypesForDate(selectedDate);
   const viewingToday = isToday(selectedDate);
@@ -83,6 +86,15 @@ export function DailyViewPage() {
       setLoading(false);
     });
   }, [family]);
+
+  // Fetch custom day name whenever date changes
+  useEffect(() => {
+    let cancelled = false;
+    getDayName(selectedDate).then((dn) => {
+      if (!cancelled) setCustomDayName(dn?.name ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [selectedDate]);
 
   // Priority cascade: DayLog pin -> child default -> dayType match -> null
   useEffect(() => {
@@ -159,6 +171,17 @@ export function DailyViewPage() {
     }
   }
 
+  async function handleCustomDayNameChange(name: string | null) {
+    if (!user) return;
+    if (name) {
+      await setDayName(selectedDate, name, user.uid);
+      setCustomDayName(name);
+    } else {
+      await clearDayName(selectedDate);
+      setCustomDayName(null);
+    }
+  }
+
   async function handleSendNote() {
     if (!family || !user || !profile || !quickNote.trim()) return;
     await addNote(family.id, user.uid, profile.displayName, profile.role, quickNote.trim());
@@ -220,7 +243,13 @@ export function DailyViewPage() {
       </div>
 
       {/* Date Navigation */}
-      <DatePicker selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      <DatePicker
+        selectedDate={selectedDate}
+        onDateChange={setSelectedDate}
+        customDayName={customDayName}
+        isAdmin={isAdmin(user?.uid)}
+        onCustomDayNameChange={handleCustomDayNameChange}
+      />
 
       {/* Schedule name + change link (parent-only) */}
       {schedule && (
