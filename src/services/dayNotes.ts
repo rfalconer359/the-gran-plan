@@ -1,5 +1,5 @@
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { compressImage } from '../utils/imageCompression';
 import type { DayNote } from '../types';
