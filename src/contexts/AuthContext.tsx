@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { getUserProfile } from '../services/auth';
@@ -8,26 +8,46 @@ import { Spinner } from '../components/ui/Spinner';
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
+  realProfile: UserProfile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  impersonate: (profile: UserProfile) => void;
+  clearImpersonation: () => void;
+  isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
+  realProfile: null,
   loading: true,
   refreshProfile: async () => {},
+  impersonate: () => {},
+  clearImpersonation: () => {},
+  isImpersonating: false,
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [realProfile, setRealProfile] = useState<UserProfile | null>(null);
+  const [impersonatedProfile, setImpersonatedProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const profile = impersonatedProfile ?? realProfile;
+  const isImpersonating = impersonatedProfile !== null;
+
+  const impersonate = useCallback((p: UserProfile) => {
+    setImpersonatedProfile(p);
+  }, []);
+
+  const clearImpersonation = useCallback(() => {
+    setImpersonatedProfile(null);
+  }, []);
 
   const refreshProfile = async () => {
     if (user) {
       const p = await getUserProfile(user.uid);
-      setProfile(p);
+      setRealProfile(p);
     }
   };
 
@@ -42,9 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await new Promise((r) => setTimeout(r, 1500));
           p = await getUserProfile(firebaseUser.uid);
         }
-        setProfile(p);
+        setRealProfile(p);
       } else {
-        setProfile(null);
+        setRealProfile(null);
+        setImpersonatedProfile(null);
       }
       setLoading(false);
     });
@@ -64,7 +85,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        realProfile,
+        loading,
+        refreshProfile,
+        impersonate,
+        clearImpersonation,
+        isImpersonating,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

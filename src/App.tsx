@@ -19,6 +19,8 @@ import { ScheduleViewPage } from './pages/ScheduleViewPage';
 import { DailyViewPage } from './pages/GranViewPage';
 import { NotesPage } from './pages/NotesPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { AdminRoute } from './components/admin/AdminRoute';
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 
 function AuthRedirect({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -73,6 +75,14 @@ export default function App() {
               <Route path="/daily" element={<DailyViewPage />} />
               <Route path="/notes" element={<NotesPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboardPage />
+                  </AdminRoute>
+                }
+              />
             </Route>
 
             {/* Catch-all */}

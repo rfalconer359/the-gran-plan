@@ -1,5 +1,7 @@
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { isAdmin } from '../../config/admin';
+import { ImpersonationBanner } from '../admin/ImpersonationBanner';
 import { cn } from '../../utils/cn';
 
 const navItems = [
@@ -11,11 +13,16 @@ const navItems = [
 ];
 
 export function AppLayout() {
-  const { profile } = useAuth();
-  const items = navItems;
+  const { profile, user } = useAuth();
+
+  const items = isAdmin(user?.uid)
+    ? [...navItems, { to: '/admin', label: 'Admin', icon: '🔧' }]
+    : navItems;
 
   return (
-    <div className="min-h-screen bg-cream-50 flex flex-col lg:flex-row">
+    <>
+      <ImpersonationBanner />
+      <div className="min-h-screen bg-cream-50 flex flex-col lg:flex-row">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-warm-100 p-6">
         <div className="mb-8">
@@ -75,6 +82,7 @@ export function AppLayout() {
           ))}
         </div>
       </nav>
-    </div>
+      </div>
+    </>
   );
 }

@@ -8,6 +8,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Helper: check if user is admin
+    function isAdminUser() {
+      return isAuth() && request.auth.uid == '7rbCfuTu5JSdL5QnL42acMg5Lwe2';
+    }
+
     // Helper: check if user is a member of the family
     function isFamilyMember(familyId) {
       return isAuth() &&
@@ -29,31 +34,31 @@ service cloud.firestore {
 
     // Families
     match /families/{familyId} {
-      allow read: if isFamilyMember(familyId);
+      allow read: if isFamilyMember(familyId) || isAdminUser();
       allow create: if isAuth();
       allow update: if isFamilyMember(familyId);
 
       // Children
       match /children/{childId} {
-        allow read: if isFamilyMember(familyId);
+        allow read: if isFamilyMember(familyId) || isAdminUser();
         allow create, update, delete: if isParentInFamily(familyId);
 
         // Schedules
         match /schedules/{scheduleId} {
-          allow read: if isFamilyMember(familyId);
+          allow read: if isFamilyMember(familyId) || isAdminUser();
           allow create, update, delete: if isParentInFamily(familyId);
         }
 
         // Day logs (grandparents can update)
         match /dayLogs/{date} {
-          allow read: if isFamilyMember(familyId);
+          allow read: if isFamilyMember(familyId) || isAdminUser();
           allow create, update: if isFamilyMember(familyId);
         }
       }
 
       // Notes (any family member can read/create)
       match /notes/{noteId} {
-        allow read: if isFamilyMember(familyId);
+        allow read: if isFamilyMember(familyId) || isAdminUser();
         allow create: if isFamilyMember(familyId);
         allow delete: if isAuth() && resource.data.authorId == request.auth.uid;
       }
